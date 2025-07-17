@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "Detox",
+  "version": "1.0",
+  "description": "Block distracting websites and track your visits.",
+  "permissions": [
+    "storage",
+    "declarativeNetRequest",
+    "declarativeNetRequestWithHostAccess",
+    "webRequest"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "images/icon.png",
+      "48": "images/icon.png",
+      "128": "images/icon.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "block.html",
+        "images/block.mp4",
+        "images/custom_block.png"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
