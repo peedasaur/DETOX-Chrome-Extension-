@@ -28,10 +28,10 @@ function updateUI(blockedUrls) {
   });
 }
 
-// Load visit counts from storage
+// Load visit counts from storage (fixed to use local storage)
 function loadVisitCounts() {
   counterList.innerHTML = "";
-  chrome.storage.sync.get("visitCounts", (data) => {
+  chrome.storage.local.get("visitCounts", (data) => {
     const counts = data.visitCounts || {};
     for (const domain in counts) {
       const li = document.createElement("li");
@@ -64,9 +64,9 @@ addBtn.addEventListener("click", () => {
   urlInput.value = "";
 });
 
-// Reset visit counts
+// Reset visit counts (fixed to use local storage)
 document.getElementById("resetCountsBtn").addEventListener("click", () => {
-  chrome.storage.sync.remove("visitCounts", () => {
+  chrome.storage.local.remove("visitCounts", () => {
     counterList.innerHTML = "";
   });
 });
