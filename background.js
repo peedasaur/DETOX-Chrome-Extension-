@@ -14,64 +14,50 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 });
 
+function normalizeDomain(url) {
+  try {
+    const parsedUrl = new URL(url.startsWith("http") ? url : "https://" + url);
+    return parsedUrl.hostname.replace(/^www\./, "");
+  } catch {
+    return url.replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/^www\./, "");
+  }
+}
+
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function updateBlockingRules() {
   const rules = [];
+  const ruleIdsToRemove = [];
 
   blockedUrls.forEach((url, index) => {
-    const base = url.replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/^www\./, "");
+    const base = normalizeDomain(url);
+    const id = index + 1;
+    ruleIdsToRemove.push(id);
 
     rules.push({
-      id: index * 2 + 1,
+      id: id,
       priority: 1,
       action: {
         type: "redirect",
         redirect: { url: chrome.runtime.getURL("block.html") }
       },
       condition: {
-        urlFilter: `*://${base}/*`,
+        regexFilter: `^(https?:\\/\\/)?(www\\.)?${escapeRegex(base)}\\/.*`,
         resourceTypes: ["main_frame"]
       }
     });
 
-    rules.push({
-      id: index * 2 + 2,
-      priority: 1,
-      action: {
-        type: "redirect",
-        redirect: { url: chrome.runtime.getURL("block.html") }
-      },
-      condition: {
-        urlFilter: `*://www.${base}/*`,
-        resourceTypes: ["main_frame"]
-      }
+    chrome.storage.local.get(["visitCounts"], (data) => {
+      const visitCounts = data.visitCounts || {};
+      visitCounts[base] = (visitCounts[base] || 0) + 1;
+      chrome.storage.local.set({ visitCounts });
     });
   });
 
   chrome.declarativeNetRequest.updateDynamicRules({
-    removeRuleIds: Array.from({ length: blockedUrls.length * 2 }, (_, i) => i + 1),
+    removeRuleIds: Array.from({ length: 100 }, (_, i) => i + 1),
     addRules: rules
   });
 }
-
-// 🔄 Track visits to blocked domains
-chrome.webRequest.onBeforeRequest.addListener(
-  (details) => {
-    try {
-      const url = new URL(details.initiator || details.documentUrl || details.url);
-      const domain = url.hostname.replace(/^www\./, "");
-
-      chrome.storage.sync.get(["visitCounts", "blockedUrls"], (data) => {
-        const counts = data.visitCounts || {};
-        const blocked = data.blockedUrls || [];
-
-        if (blocked.includes(domain)) {
-          counts[domain] = (counts[domain] || 0) + 1;
-          chrome.storage.sync.set({ visitCounts: counts });
-        }
-      });
-    } catch (e) {
-      console.warn("Error tracking visit:", e);
-    }
-  },
-  { urls: ["<all_urls>"], types: ["main_frame"] }
-);
