@@ -1,4 +1,4 @@
-# Detox — Chrome Extension
+# Detox — Chrome Extension 
 
 Detox is a Chrome extension that helps you stay focused by blocking distracting websites.
 
